@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WebGIS Fasilitas Olahraga DIY</title>
+
+    <!-- FONT -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- LEAFLET -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <!-- ROUTING -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+    <!-- GEOCODER -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+    <!-- CLUSTER -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+    <style>
+        /* ===================================== */
+        /* GLOBAL */
+        /* ===================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            background: #03110b;
+            color: white;
+        }
+
+        /* ===================================== */
+        /* RUNNING HEADER */
+        /* ===================================== */
+
+        .running-header {
+
+            position: fixed;
+
+            top: 0;
+            left: 0;
+
+            width: 100%;
+            height: 60px;
+
+            background: #03110bee;
+
+            border-bottom: 2px solid #00ff9d55;
+
+            display: flex;
+            align-items: center;
+
+            overflow: hidden;
+
+            z-index: 99999;
+
+            backdrop-filter: blur(8px);
+
+        }
+
+        .running-text {
+
+            white-space: nowrap;
+
+            font-family: 'Orbitron', sans-serif;
+
+            font-size: 26px;
+
+            font-weight: 700;
+
+            color: #00ff9d;
+
+            padding-left: 100%;
+
+            animation: runningText 22s linear infinite;
+
+            letter-spacing: 2px;
+
+        }
+
+        @keyframes runningText {
+
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+
+        }
+
+        /* ===================================== */
+        /* CONTAINER */
+        /* ===================================== */
+
+        .container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+            padding-top: 60px;
+        }
+
+        /* ===================================== */
+        /* SIDEBAR */
+        /* ===================================== */
+
+        .sidebar {
+            background: #07150f;
+            padding: 20px;
+            overflow: auto;
+            border-right: 2px solid #00ff9d33;
+        }
+
+        .card {
+            background: #0b2017;
+            padding: 18px;
+            border-radius: 22px;
+            margin-bottom: 22px;
+            border: 1px solid #00ff9d22;
+        }
+
+        .card h3 {
+            color: #00ff9d;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .kpi {
+            text-align: center;
+        }
+
+        .kpi h1 {
+            font-size: 64px;
+            color: #00ff9d;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* ===================================== */
+        /* BUTTON */
+        /* ===================================== */
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 14px;
+            background: #00ff9d;
+            color: black;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #00cc7a;
+            transform: translateY(-2px);
+        }
+
+        /* ===================================== */
+        /* MAP */
+        /* ===================================== */
+
+        #map {
+            width: 100%;
+            height: calc(100vh - 60px);
+        }
+
+        /* ===================================== */
+        /* PANEL */
+        /* ===================================== */
+
+        .right {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            width: 36%;
+            height: 190px;
+            display: flex;
+            gap: 14px;
+            z-index: 999;
+        }
+
+        .distribusi-box,
+        .legenda-box {
+            width: 50%;
+            background: #0b2017ee;
+            border-radius: 20px;
+            padding: 14px;
+            border: 1px solid #00ff9d22;
+            backdrop-filter: blur(8px);
+        }
+
+        .distribusi-box h3,
+        .legenda-box h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .chart-wrapper {
+            height: 120px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+            line-height: 24px;
+            font-size: 14px;
+        }
+
+        /* ===================================== */
+        /* SEARCH RESULT */
+        /* ===================================== */
+
+        #searchResult {
+            display: none;
+            max-height: 250px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 14px;
+            color: black;
+            margin-top: -5px;
+        }
+
+        .search-item {
+            padding: 14px;
+            border-bottom: 1px solid #dddddd;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .search-item:hover {
+            background: #f2f2f2;
+        }
+
+        .search-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111111;
+        }
+
+        .search-sub {
+            font-size: 13px;
+            color: #666666;
+            margin-top: 4px;
+        }
+
+        /* ===================================== */
+        /* POPUP */
+        /* ===================================== */
+
+        .leaflet-popup-content-wrapper {
+            background: #07150f;
+            color: white;
+            border-radius: 18px;
+        }
+
+        .leaflet-popup-tip {
+            background: #07150f;
+        }
+
+        /* ===================================== */
+        /* ROUTING */
+        /* ===================================== */
+
+        .leaflet-routing-container {
+            background: white !important;
+            color: #008855 !important;
+            border-radius: 18px !important;
+            border: 2px solid #00ff9d55 !important;
+            max-height: 300px;
+            overflow: auto;
+        }
+
+        .leaflet-routing-container * {
+            color: #008855 !important;
+            font-weight: 600;
+        }
+
+        /* ===================================== */
+        /* MODAL */
+        /* ===================================== */
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+
+            position: relative;
+
+            background: #07150f;
+            padding: 30px;
+            border-radius: 24px;
+            width: 430px;
+            border: 2px solid #00ff9d55;
+            box-shadow: 0 0 25px #00000099;
+        }
+
+        .modal-content h2 {
+            color: #00ff9d;
+            margin-bottom: 20px;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .modal-content select,
+        .modal-content input {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        /* CLOSE BUTTON */
+
+        .close-btn {
+
+            position: absolute;
+
+            top: 15px;
+            right: 15px;
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+
+            background: #ff3b3b;
+
+            color: white;
+
+            font-size: 20px;
+            font-weight: bold;
+
+            border: none;
+
+            cursor: pointer;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            transition: 0.3s;
+
+        }
+
+        .close-btn:hover {
+
+            background: #ff0000;
+
+            transform: scale(1.1);
+
+        }
+
+        .mode-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: white;
+            color: black;
+        }
+
+        .mode-btn.active {
+            background: #00ff9d;
+        }
+
+        /* ===================================== */
+        /* SCROLLBAR */
+        /* ===================================== */
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff9d;
+            border-radius: 10px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- RUNNING HEADER -->
+
+    <div class="running-header">
+
+        <div class="running-text">
+
+        FASILITAS OLAHRAGA PROVINSI DAERAH ISTIMEWA YOGYAKARTA
+
+        </div>
+
+    </div>
+
+    <div class="container">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+
+            <div class="card">
+
+                <h3>Total Fasilitas</h3>
+
+                <div class="kpi">
+                    <h1 id="totalData">0</h1>
+                </div>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Tools Analisis</h3>
+
+                <button id="heatBtn">
+                    Heatmap Analysis
+                </button>
+
+                <button id="clusterBtn">
+                    Spatial Clustering
+                </button>
+
+                <button id="routeBtn">
+                    Route Analysis
+                </button>
+
+                <button id="nearestBtn">
+                    Nearest Facility
+                </button>
+
+                <button id="resetBtn">
+                    Reset Map
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- MAP -->
+        <div id="map"></div>
+
+    </div>
+
+    <!-- PANEL -->
+
+    <div class="right">
+
+        <div class="distribusi-box">
+
+            <h3>Distribusi Kategori</h3>
+
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+
+        </div>
+
+        <div class="legenda-box">
+
+            <h3>Legenda</h3>
+
+            <div class="legend-grid">
+
+                <div><span style="color:#00ff00;">⬤</span> Futsal</div>
+                <div><span style="color:#00bfff;">⬤</span> Badminton</div>
+                <div><span style="color:#ff0000;">⬤</span> Sepak Bola</div>
+                <div><span style="color:#ff9900;">⬤</span> Basket</div>
+                <div><span style="color:#ffff00;">⬤</span> Voli</div>
+                <div><span style="color:#cc00ff;">⬤</span> Tenis</div>
+                <div><span style="color:#00ffff;">⬤</span> Lainnya</div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL -->
+
+    <div id="nearestModal" class="modal">
+
+        <div class="modal-content">
+
+            <button id="closeModalBtn" class="close-btn">
+                ✕
+            </button>
+
+            <h2>
+                Nearest Facility
+            </h2>
+
+            <select id="facilitySelect">
+
+                <option value="futsal">Futsal</option>
+                <option value="badminton">Badminton</option>
+                <option value="football">Sepak Bola</option>
+                <option value="basket">Basket</option>
+                <option value="volley">Voli</option>
+                <option value="tennis">Tenis</option>
+                <option value="fitness">Fitness</option>
+
+            </select>
+
+            <h3 style="
+margin-bottom:10px;
+color:#00ff9d;
+">
+
+                Metode Lokasi
+
+            </h3>
+
+            <div class="mode-group">
+
+                <button id="mapModeBtn" class="mode-btn active">
+                    Klik Map
+                </button>
+
+                <button id="searchModeBtn" class="mode-btn">
+                    Search Lokasi
+                </button>
+
+            </div>
+
+            <div id="searchBox" style="display:none; position:relative;">
+
+                <input type="text" id="searchLocation" placeholder="Cari lokasi..." autocomplete="off" />
+
+                <div id="searchResult"></div>
+
+            </div>
+
+            <button id="startNearest">
+                Cari Fasilitas Terdekat
+            </button>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        // =====================================
+        // MAP
+        // =====================================
+
+        const map =
+            L.map('map').setView(
+                [-7.8014, 110.3647],
+                10
+            );
+
+        // =====================================
+        // BASEMAP
+        // =====================================
+
+        const dark =
+            L.tileLayer(
+                'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            ).addTo(map);
+
+        const osm =
+            L.tileLayer(
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            );
+
+        const googleHybrid =
+            L.tileLayer(
+                'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+                {
+                    maxZoom: 20
+                }
+            );
+
+        // =====================================
+        // CONTROL
+        // =====================================
+
+        L.control.layers({
+
+            "Dark": dark,
+            "OSM": osm,
+            "Google Hybrid": googleHybrid
+
+        }).addTo(map);
+
+        L.Control.geocoder().addTo(map);
+
+        // =====================================
+        // GLOBAL
+        // =====================================
+
+        let allFeatures = [];
+        let heatLayer;
+        let routingControl;
+        let nearestMode = "map";
+        let selectedSearchLatLng = null;
+        let searchMarker;
+
+        let clusterGroup =
+            L.markerClusterGroup();
+
+        // =====================================
+        // LOAD DATA
+        // =====================================
+
+        fetch('fasilitas_olahraga_diy.geojson')
+
+            .then(res => res.json())
+
+            .then(data => {
+
+                allFeatures = data.features;
+
+                document.getElementById(
+                    'totalData'
+                ).innerText =
+                    allFeatures.length;
+
+                tampilkanData();
+
+                buatChart();
+
+            });
+
+        // =====================================
+        // WARNA
+        // =====================================
+
+        function warnaKategori(k) {
+
+            k = k.toLowerCase();
+
+            if (k.includes("futsal"))
+                return "#00ff00";
+
+            if (k.includes("badminton"))
+                return "#00bfff";
+
+            if (k.includes("football") || k.includes("soccer"))
+                return "#ff0000";
+
+            if (k.includes("basket"))
+                return "#ff9900";
+
+            if (k.includes("volley"))
+                return "#ffff00";
+
+            if (k.includes("tennis"))
+                return "#cc00ff";
+
+            return "#00ffff";
+
+        }
+
+        // =====================================
+        // TAMPILKAN DATA
+        // =====================================
+
+        function tampilkanData() {
+
+            let heatPoints = [];
+
+            allFeatures.forEach(f => {
+
+                const p = f.properties;
+
+                const lat =
+                    f.geometry.coordinates[1];
+
+                const lng =
+                    f.geometry.coordinates[0];
+
+                heatPoints.push([lat, lng]);
+
+                const marker =
+                    L.circleMarker([lat, lng], {
+
+                        radius: 7,
+                        fillColor: warnaKategori(p.kategori),
+                        color: "#fff",
+                        weight: 1,
+                        fillOpacity: 0.9
+
+                    })
+
+                        .bindPopup(`
+
+<h3>${p.nama}</h3>
+
+<b>Kategori:</b>
+${p.kategori}<br>
+
+<b>Alamat:</b>
+${p.alamat}
+
+`);
+
+                marker.addTo(map);
+
+                clusterGroup.addLayer(
+                    L.marker([lat, lng])
+                );
+
+            });
+
+            heatLayer =
+                L.heatLayer(heatPoints, {
+
+                    radius: 45,
+                    blur: 25,
+
+                    gradient: {
+
+                        0.1: '#00ff9d',
+                        0.5: '#ffff00',
+                        1: '#ff0000'
+
+                    }
+
+                });
+
+        }
+
+        // =====================================
+        // HEATMAP
+        // =====================================
+
+        document.getElementById('heatBtn')
+
+            .onclick = () => {
+
+                if (map.hasLayer(heatLayer)) {
+
+                    map.removeLayer(heatLayer);
+
+                } else {
+
+                    heatLayer.addTo(map);
+
+                }
+
+            };
+
+        // =====================================
+        // CLUSTER
+        // =====================================
+
+        document.getElementById('clusterBtn')
+
+            .onclick = () => {
+
+                if (map.hasLayer(clusterGroup)) {
+
+                    map.removeLayer(clusterGroup);
+
+                } else {
+
+                    map.addLayer(clusterGroup);
+
+                }
+
+            };
+
+        // =====================================
+        // ROUTE ANALYSIS
+        // =====================================
+
+        document.getElementById('routeBtn')
+
+            .onclick = () => {
+
+                alert("Klik titik awal lalu tujuan");
+
+                let start, end;
+
+                map.once('click', e1 => {
+
+                    start = e1.latlng;
+
+                    map.once('click', e2 => {
+
+                        end = e2.latlng;
+
+                        if (routingControl) {
+
+                            map.removeControl(routingControl);
+
+                        }
+
+                        routingControl =
+                            L.Routing.control({
+
+                                waypoints: [start, end],
+
+                                routeWhileDragging: true,
+
+                                createMarker: () => null,
+
+                                lineOptions: {
+
+                                    styles: [{
+
+                                        color: '#00ff9d',
+                                        weight: 5
+
+                                    }]
+
+                                }
+
+                            }).addTo(map);
+
+                    });
+
+                });
+
+            };
+
+        // =====================================
+        // OPEN MODAL
+        // =====================================
+
+        document.getElementById(
+            'nearestBtn'
+        )
+
+            .onclick = () => {
+
+                document.getElementById(
+                    'nearestModal'
+                )
+
+                    .style.display = 'flex';
+
+            };
+
+        // =====================================
+        // CLOSE MODAL
+        // =====================================
+
+        document.getElementById(
+            'closeModalBtn'
+        )
+
+            .onclick = () => {
+
+                document.getElementById(
+                    'nearestModal'
+                )
+
+                    .style.display = 'none';
+
+            };
+
+        // =====================================
+        // SEARCH MODE
+        // =====================================
+
+        document.getElementById(
+            'mapModeBtn'
+        )
+
+            .onclick = () => {
+
+                nearestMode = "map";
+
+                document.getElementById(
+                    'searchBox'
+                ).style.display = 'none';
+
+                document.getElementById(
+                    'mapModeBtn'
+                ).classList.add(
+                    'active'
+                );
+
+                document.getElementById(
+                    'searchModeBtn'
+                ).classList.remove(
+                    'active'
+                );
+
+            };
+
+        document.getElementById(
+            'searchModeBtn'
+        )
+
+            .onclick = () => {
+
+                nearestMode = "search";
+
+                document.getElementById(
+                    'searchBox'
+                ).style.display = 'block';
+
+                document.getElementById(
+                    'searchModeBtn'
+                ).classList.add(
+                    'active'
+                );
+
+                document.getElementById(
+                    'mapModeBtn'
+                ).classList.remove(
+                    'active'
+                );
+
+            };
+
+        // =====================================
+        // SEARCH AUTOCOMPLETE
+        // =====================================
+
+        document.getElementById(
+            'searchLocation'
+        )
+
+            .addEventListener(
+
+                'input',
+
+                async function () {
+
+                    const keyword =
+                        this.value.trim();
+
+                    const resultBox =
+                        document.getElementById(
+                            'searchResult'
+                        );
+
+                    if (keyword.length < 3) {
+
+                        resultBox.style.display =
+                            'none';
+
+                        resultBox.innerHTML = "";
+
+                        return;
+
+                    }
+
+                    resultBox.style.display =
+                        'block';
+
+                    resultBox.innerHTML = `
+
+<div style="
+padding:15px;
+color:#666;
+font-size:14px;
+">
+
+Mencari lokasi...
+
+</div>
+
+`;
+
+                    try {
+
+                        const response =
+                            await fetch(
+
+                                `https://photon.komoot.io/api/?q=${keyword}&limit=5`
+
+                            );
+
+                        const result =
+                            await response.json();
+
+                        const data =
+                            result.features;
+
+                        resultBox.innerHTML = "";
+
+                        if (data.length === 0) {
+
+                            resultBox.innerHTML = `
+
+<div style="
+padding:15px;
+color:#666;
+font-size:14px;
+">
+
+Lokasi tidak ditemukan
+
+</div>
+
+`;
+
+                            return;
+
+                        }
+
+                        data.forEach(loc => {
+
+                            const props =
+                                loc.properties;
+
+                            const coords =
+                                loc.geometry.coordinates;
+
+                            const title = `
+
+${props.name || ''}
+
+${props.city ? ', ' + props.city : ''}
+
+${props.state ? ', ' + props.state : ''}
+
+`;
+
+                            const item =
+                                document.createElement(
+                                    'div'
+                                );
+
+                            item.className =
+                                'search-item';
+
+                            item.innerHTML = `
+
+<div class="search-title">
+
+${title}
+
+</div>
+
+<div class="search-sub">
+
+${props.country || 'Indonesia'}
+
+</div>
+
+`;
+
+                            item.onclick = () => {
+
+                                document.getElementById(
+                                    'searchLocation'
+                                ).value =
+                                    title;
+
+                                selectedSearchLatLng =
+                                    L.latLng(
+                                        coords[1],
+                                        coords[0]
+                                    );
+
+                                resultBox.style.display =
+                                    'none';
+
+                                resultBox.innerHTML = "";
+
+                                map.setView(
+                                    selectedSearchLatLng,
+                                    15
+                                );
+
+                                if (searchMarker) {
+
+                                    map.removeLayer(
+                                        searchMarker
+                                    );
+
+                                }
+
+                                searchMarker =
+                                    L.marker(
+                                        selectedSearchLatLng
+                                    )
+
+                                        .addTo(map)
+
+                                        .bindPopup(
+                                            title
+                                        )
+
+                                        .openPopup();
+
+                            };
+
+                            resultBox.appendChild(
+                                item
+                            );
+
+                        });
+
+                    }
+
+                    catch (err) {
+
+                        console.log(err);
+
+                        resultBox.innerHTML = `
+
+<div style="
+padding:15px;
+color:red;
+font-size:14px;
+">
+
+Gagal mengambil lokasi
+
+</div>
+
+`;
+
+                    }
+
+                }
+
+            );
+
+        // =====================================
+        // CLOSE SEARCH
+        // =====================================
+
+        document.addEventListener(
+
+            'click',
+
+            function (e) {
+
+                const resultBox =
+                    document.getElementById(
+                        'searchResult'
+                    );
+
+                const input =
+                    document.getElementById(
+                        'searchLocation'
+                    );
+
+                if (
+
+                    !resultBox.contains(e.target)
+
+                    &&
+
+                    e.target !== input
+
+                ) {
+
+                    resultBox.style.display =
+                        'none';
+
+                }
+
+            }
+
+        );
+
+        // =====================================
+        // START NEAREST
+        // =====================================
+
+        document.getElementById(
+            'startNearest'
+        )
+
+            .onclick = () => {
+
+                const selected =
+                    document.getElementById(
+                        'facilitySelect'
+                    ).value;
+
+                // CLOSE MODAL
+
+                document.getElementById(
+                    'nearestModal'
+                ).style.display = 'none';
+
+                // =====================================
+                // MAP MODE
+                // =====================================
+
+                if (nearestMode === "map") {
+
+                    alert(
+                        "Klik lokasi anda di map"
+                    );
+
+                    map.once('click', e => {
+
+                        cariNearest(
+                            e.latlng,
+                            selected
+                        );
+
+                    });
+
+                }
+
+                // =====================================
+                // SEARCH MODE
+                // =====================================
+
+                else {
+
+                    if (!selectedSearchLatLng) {
+
+                        alert(
+                            "Pilih lokasi dari hasil pencarian"
+                        );
+
+                        return;
+
+                    }
+
+                    cariNearest(
+                        selectedSearchLatLng,
+                        selected
+                    );
+
+                }
+
+            };
+
+        // =====================================
+        // FUNCTION CARI NEAREST
+        // =====================================
+
+        function cariNearest(
+            klik,
+            selected
+        ) {
+
+            let minDist =
+                Infinity;
+
+            let nearest =
+                null;
+
+            // LOOP DATA
+
+            allFeatures.forEach(f => {
+
+                const kategori =
+                    f.properties.kategori
+                        .toLowerCase();
+
+                if (
+                    !kategori.includes(
+                        selected.toLowerCase()
+                    )
+                ) {
+                    return;
+                }
+
+                const lat =
+                    f.geometry.coordinates[1];
+
+                const lng =
+                    f.geometry.coordinates[0];
+
+                const dist =
+                    klik.distanceTo(
+                        [lat, lng]
+                    );
+
+                // CEK TERDEKAT
+
+                if (dist < minDist) {
+
+                    minDist = dist;
+
+                    nearest = {
+
+                        lat: lat,
+                        lng: lng,
+
+                        nama:
+                            f.properties.nama,
+
+                        kategori:
+                            f.properties.kategori,
+
+                        alamat:
+                            f.properties.alamat
+
+                    };
+
+                }
+
+            });
+
+            // TIDAK ADA DATA
+
+            if (!nearest) {
+
+                alert(
+                    "Fasilitas tidak ditemukan"
+                );
+
+                return;
+
+            }
+
+            // HAPUS ROUTE LAMA
+
+            if (routingControl) {
+
+                map.removeControl(
+                    routingControl
+                );
+
+            }
+
+            // ROUTING
+
+            routingControl =
+                L.Routing.control({
+
+                    waypoints: [
+
+                        klik,
+
+                        L.latLng(
+                            nearest.lat,
+                            nearest.lng
+                        )
+
+                    ],
+
+                    routeWhileDragging: true,
+
+                    createMarker: () => null,
+
+                    lineOptions: {
+
+                        styles: [{
+
+                            color: '#00ff9d',
+                            weight: 6
+
+                        }]
+
+                    }
+
+                })
+
+                    .addTo(map);
+
+            // POPUP
+
+            L.popup()
+
+                .setLatLng([
+                    nearest.lat,
+                    nearest.lng
+                ])
+
+                .setContent(`
+
+<h3>${nearest.nama}</h3>
+
+<b>Kategori:</b>
+${nearest.kategori}<br>
+
+<b>Alamat:</b>
+${nearest.alamat}<br><br>
+
+<b>Fasilitas Terdekat</b>
+
+`)
+
+                .openOn(map);
+
+        }
+
+        // =====================================
+        // RESET
+        // =====================================
+
+        document.getElementById(
+            'resetBtn'
+        )
+
+            .onclick = () => {
+
+                map.setView(
+                    [-7.8014, 110.3647],
+                    10
+                );
+
+                if (routingControl) {
+
+                    map.removeControl(
+                        routingControl
+                    );
+
+                }
+
+            };
+
+        // =====================================
+        // CHART
+        // =====================================
+
+        function buatChart() {
+
+            let futsal = 0;
+            let badminton = 0;
+            let sepakbola = 0;
+            let basket = 0;
+            let voli = 0;
+            let tenis = 0;
+            let fitness = 0;
+
+            allFeatures.forEach(f => {
+
+                const k =
+                    f.properties.kategori
+                        .toLowerCase();
+
+                if (k.includes("futsal")) {
+
+                    futsal++;
+
+                }
+
+                else if (k.includes("badminton")) {
+
+                    badminton++;
+
+                }
+
+                else if (k.includes("football") || k.includes("soccer")) {
+
+                    sepakbola++;
+
+                }
+
+                else if (k.includes("basket")) {
+
+                    basket++;
+
+                }
+
+                else if (k.includes("volley")) {
+
+                    voli++;
+
+                }
+
+                else if (k.includes("tennis")) {
+
+                    tenis++;
+
+                }
+
+                else if (k.includes("fitness") || k.includes("gym")) {
+
+                    fitness++;
+
+                }
+
+            });
+
+            new Chart(
+
+                document.getElementById(
+                    'pieChart'
+                ),
+
+                {
+
+                    type: 'doughnut',
+
+                    data: {
+
+                        labels: [
+
+                            'Futsal',
+                            'Badminton',
+                            'Sepak Bola',
+                            'Basket',
+                            'Voli',
+                            'Tenis',
+                            'Fitness'
+
+                        ],
+
+                        datasets: [{
+
+                            data: [
+
+                                futsal,
+                                badminton,
+                                sepakbola,
+                                basket,
+                                voli,
+                                tenis,
+                                fitness
+
+                            ],
+
+                            backgroundColor: [
+
+                                '#00ff00',
+                                '#00bfff',
+                                '#ff0000',
+                                '#ff9900',
+                                '#ffff00',
+                                '#cc00ff',
+                                '#00ffff'
+
+                            ],
+
+                            borderColor: '#ffffff',
+
+                            borderWidth: 2
+
+                        }]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        plugins: {
+
+                            legend: {
+                                display: false
+                            }
+
+                        }
+
+                    }
+
+                });
+
+        }
+
+    </script>
+
+</body>
+
+</html>
